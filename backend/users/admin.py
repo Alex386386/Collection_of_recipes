@@ -1,8 +1,7 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
 
-from .models import (User, Tag, Ingredient, Recipe, Subscription,
-                     ShoppingCart, Favorite)
+from recipes.models import (Tag, Ingredient, Recipe, ShoppingCart,
+                            Favorite, RecipeIngredient)
 
 
 @admin.register(Tag)
@@ -32,6 +31,11 @@ class IngredientAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+    min_num = 1
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     readonly_fields = ('count_favorite',)
@@ -52,6 +56,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'tags',)
     list_filter = ('name', 'author', 'tags',)
     empty_value_display = '-пусто-'
+    inlines = (RecipeIngredientInline,)
 
     def count_favorite(self, obj):
         return obj.recipe_favorite.all().count()
@@ -77,17 +82,3 @@ class FavoriteAdmin(admin.ModelAdmin):
     )
     search_fields = ('user', 'recipe',)
     empty_value_display = '-пусто-'
-
-
-@admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = (
-        'pk',
-        'subscriber',
-        'subscribed',
-    )
-    search_fields = ('user', 'author',)
-    empty_value_display = '-пусто-'
-
-
-admin.site.register(User, UserAdmin)

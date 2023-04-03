@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api.apps.ApiConfig',
+    'users.apps.UsersConfig',
+    'recipes.apps.RecipesConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
@@ -125,4 +127,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'backend_media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'users.User'

@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.mixins import DestroyModelMixin, CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
-from .models import Recipe
+from recipes.models import Recipe
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
@@ -41,3 +41,15 @@ class FavoriteShoppingViewSet(CreateDestroyViewSet):
         context = super().get_serializer_context()
         context['recipe_id'] = int(self.kwargs.get('recipe_id'))
         return context
+
+
+def get_ingredients_dict(ingredients_data):
+    ingredients_dict = {}
+    for ingredient in ingredients_data:
+        ingredient_id = ingredient.get('ingredient').get('id')
+        amount = ingredient.get('amount')
+        if ingredient_id in ingredients_dict:
+            ingredients_dict[ingredient_id] += amount
+        else:
+            ingredients_dict[ingredient_id] = amount
+    return ingredients_dict

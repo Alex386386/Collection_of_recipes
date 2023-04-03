@@ -10,8 +10,8 @@ from rest_framework.permissions import (IsAuthenticatedOrReadOnly,
 from rest_framework.response import Response
 
 from .filters import RecipeFilter, IngredientSearchFilter
-from .models import (User, Tag, Ingredient, Recipe,
-                     Subscription, ShoppingCart, Favorite)
+from recipes.models import Tag, Ingredient, Recipe, ShoppingCart, Favorite
+from users.models import User, Subscription
 from .pagination import CustomPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (DownloadShoppingCartSerializer, TagSerializer,
@@ -45,6 +45,7 @@ class IngredientViewSet(TagIngredientViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Получение и создание рецептов."""
+    queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
@@ -54,10 +55,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
             return RecipeSerializerGet
         return RecipeSerializer
-
-    def get_queryset(self):
-        queryset = Recipe.objects.all()
-        return queryset
 
 
 class SubscribeViewSet(CreateDestroyViewSet):

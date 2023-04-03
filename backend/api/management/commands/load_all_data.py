@@ -2,7 +2,7 @@ import csv
 
 from django.core.management import BaseCommand
 
-from api.models import Ingredient, Tag
+from recipes.models import Ingredient, Tag
 
 
 def iter_csv(file_path: str):

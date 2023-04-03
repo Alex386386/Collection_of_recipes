@@ -6,8 +6,10 @@ from djoser.serializers import UserCreateSerializer
 from rest_framework import serializers
 from rest_framework.relations import StringRelatedField
 
-from .models import (User, Tag, Ingredient, Recipe, RecipeIngredient,
-                     RecipeTag, Subscription, Favorite, ShoppingCart)
+from recipes.models import (Tag, Ingredient, Recipe, ShoppingCart, Favorite,
+                            RecipeIngredient, RecipeTag)
+from users.models import User, Subscription
+from .utils import get_ingredients_dict
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -122,7 +124,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
-        """Класс мета для модели рецепта."""
         model = Recipe
         fields = ('id', 'name', 'author',
                   'tags', 'ingredients',
@@ -132,29 +133,29 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
+        if not ingredients:
+            raise serializers.ValidationError(
+                "Вы должны добавить хотя бы один ингредиент!")
         recipe = Recipe.objects.create(author=self.context['request'].user,
                                        **validated_data)
 
-        ingredients_dict = {}
-        for ingredient in ingredients:
-            ingredient_id = ingredient.get('ingredient').get('id')
-            amount = ingredient.get('amount')
-            if ingredient_id in ingredients_dict:
-                ingredients_dict[ingredient_id] += amount
-            else:
-                ingredients_dict[ingredient_id] = amount
+        ingredients_dict = get_ingredients_dict(ingredients)
 
+        recipe_ingredients = []
         for ingredient_id, amount in ingredients_dict.items():
             current_ingredient, status = Ingredient.objects.get_or_create(
                 pk=ingredient_id)
-            RecipeIngredient.objects.create(
+            recipe_ingredients.append(RecipeIngredient(
                 ingredient=current_ingredient,
                 recipe=recipe,
-                amount=amount)
+                amount=amount))
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
+        recipe_tags = []
         for tag in tags:
-            RecipeTag.objects.create(
-                tag=tag, recipe=recipe)
+            recipe_tags.append(RecipeTag(tag=tag, recipe=recipe))
+        RecipeTag.objects.bulk_create(recipe_tags)
+
         return recipe
 
     def validate(self, data):
@@ -194,22 +195,18 @@ class RecipeSerializer(serializers.ModelSerializer):
             for tag in tags_data:
                 instance.tags.add(tag)
         if ingredients_data:
-            ingredients_dict = {}
-            for ingredient in ingredients_data:
-                ingredient_id = ingredient.get('ingredient').get('id')
-                amount = ingredient.get('amount')
-                if ingredient_id in ingredients_dict:
-                    ingredients_dict[ingredient_id] += amount
-                else:
-                    ingredients_dict[ingredient_id] = amount
+            ingredients_dict = get_ingredients_dict(ingredients_data)
             RecipeIngredient.objects.filter(recipe=instance).delete()
+
+            recipe_ingredients = []
             for ingredient_id, amount in ingredients_dict.items():
                 current_ingredient, status = Ingredient.objects.get_or_create(
                     pk=ingredient_id)
-                RecipeIngredient.objects.create(
+                recipe_ingredients.append(RecipeIngredient(
                     ingredient=current_ingredient,
                     recipe=instance,
-                    amount=amount)
+                    amount=amount))
+            RecipeIngredient.objects.bulk_create(recipe_ingredients)
         return instance
 
 
@@ -234,7 +231,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        """Класс мета для модели рецепта."""
         model = Subscription
         fields = ('email', 'id', 'username', 'is_subscribed', 'first_name',
                   'last_name', 'recipes', 'recipes_count')
@@ -256,7 +252,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return ShortRecipeSerializer(queryset, many=True).data
 
     def get_recipes_count(self, obj):
-        count = len(Recipe.objects.filter(author=obj.subscribed))
+        count = Recipe.objects.filter(author=obj.subscribed).count()
         return count
 
     def validate(self, data):

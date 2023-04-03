@@ -1,30 +1,6 @@
-from django.contrib.auth.models import AbstractUser
+from users.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-
-
-class User(AbstractUser):
-    first_name = models.CharField(
-        max_length=150,
-        verbose_name='Firstname',
-        null=True)
-    last_name = models.CharField(
-        max_length=150,
-        verbose_name='Lastname',
-        null=True)
-    username = models.CharField(
-        max_length=150,
-        verbose_name='Username',
-        unique=True
-    )
-    email = models.EmailField(
-        verbose_name='Email',
-        unique=True,
-        max_length=254
-    )
-    is_subscribed = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f'{self.username}'
 
 
 class Tag(models.Model):
@@ -39,6 +15,9 @@ class Tag(models.Model):
         verbose_name='slug-значение тэга'
     )
 
+    class Meta:
+        ordering = ('id',)
+
     def __str__(self):
         return f'{self.name}'
 
@@ -52,6 +31,9 @@ class Ingredient(models.Model):
         max_length=10,
         verbose_name='Единица измерения ингредиента'
     )
+
+    class Meta:
+        ordering = ('id',)
 
     def __str__(self):
         return f'{self.name}'
@@ -85,7 +67,9 @@ class Recipe(models.Model):
         null=True,
         verbose_name='Описание рецепта',
     )
-    cooking_time = models.PositiveSmallIntegerField()
+    cooking_time = models.PositiveSmallIntegerField(
+        validators=[MaxValueValidator(720), MinValueValidator(1)],
+    )
 
     class Meta:
         ordering = ('-id',)
@@ -116,6 +100,7 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveSmallIntegerField(
         help_text='Введите количество ингредиента',
         default=0,
+        validators=[MaxValueValidator(10000), MinValueValidator(1)],
     )
 
     def __str__(self):
@@ -140,24 +125,6 @@ class RecipeTag(models.Model):
         return f'{self.recipe} {self.tag}'
 
 
-class Subscription(models.Model):
-    subscriber = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscriber',
-        verbose_name='Подписчик',
-    )
-    subscribed = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscribed',
-        verbose_name='Автор на которого подписываются',
-    )
-
-    def __str__(self):
-        return f'{self.subscriber} {self.subscribed}'
-
-
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
@@ -174,6 +141,9 @@ class Favorite(models.Model):
         verbose_name='Рецепт избран',
         help_text='Рецепт в избранном'
     )
+
+    class Meta:
+        ordering = ('id',)
 
     def __str__(self):
         return f'{self.user} {self.recipe}'
@@ -195,6 +165,9 @@ class ShoppingCart(models.Model):
         verbose_name='Список покупок',
         help_text='список покупок для рецепта'
     )
+
+    class Meta:
+        ordering = ('id',)
 
     def __str__(self):
         return f'{self.user} {self.recipe}'
