@@ -42,7 +42,6 @@ jobs:
             sudo systemctl stop nginx
             sudo docker stop $(sudo docker ps -a -q)
             sudo docker compose rm infra-backend
-            sudo docker compose rm infra-frontend
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
