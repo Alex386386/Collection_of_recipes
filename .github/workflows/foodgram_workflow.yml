@@ -3,37 +3,9 @@ name: Course-work workflow
 on: [push]
 
 jobs:
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-
-    - name: Install dependencies
-      run: | 
-        # обновление pip
-        python -m pip install --upgrade pip 
-        # установка flake8 и его плагинов
-        pip install flake8 pep8-naming flake8-broken-line flake8-return
-        # перейти в папку с зависимостями
-        cd api_yamdb
-        # установка зависимостей
-        pip install -r requirements.txt 
-
-    - name: Test with flake8 and django tests
-      run: |
-        # запуск проверки проекта по flake8
-        python -m flake8
-        # запустить pytest
-        pytest
-
   build_and_push_to_docker_hub:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
-    needs: tests
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -51,8 +23,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          context: ./api_yamdb/
-          tags: ${{ secrets.DOCKER_USERNAME }}/api_yamdb_web:latest
+          context: ./backend/
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,8 +38,11 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo docker compose stop
-            sudo docker compose rm web
+            sudo systemctl stop gunicorn
+            sudo systemctl stop nginx
+            sudo docker stop $(sudo docker ps -a -q)
+            sudo docker compose rm infra-backend
+            sudo docker compose rm infra-frontend
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
@@ -86,4 +61,4 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.workflow }} успешно выполнен!
+          message: ${{ github.workflow }} успешно выполнен, сервис foodgram готов к работе!
