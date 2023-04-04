@@ -56,6 +56,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializerGet
         return RecipeSerializer
 
+    def perform_destroy(self, instance):
+        instance.image.delete()
+        instance.delete()
+
 
 class SubscribeViewSet(CreateDestroyViewSet):
     """Создание и удаление подписок."""

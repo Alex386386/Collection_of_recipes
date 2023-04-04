@@ -9,7 +9,7 @@ from rest_framework.relations import StringRelatedField
 from recipes.models import (Tag, Ingredient, Recipe, ShoppingCart, Favorite,
                             RecipeIngredient, RecipeTag)
 from users.models import User, Subscription
-from .utils import get_ingredients_dict
+from .utils import get_ingredients_dict, get_recipe_ingredients
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -138,17 +138,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                 "Вы должны добавить хотя бы один ингредиент!")
         recipe = Recipe.objects.create(author=self.context['request'].user,
                                        **validated_data)
-
         ingredients_dict = get_ingredients_dict(ingredients)
-
-        recipe_ingredients = []
-        for ingredient_id, amount in ingredients_dict.items():
-            current_ingredient, status = Ingredient.objects.get_or_create(
-                pk=ingredient_id)
-            recipe_ingredients.append(RecipeIngredient(
-                ingredient=current_ingredient,
-                recipe=recipe,
-                amount=amount))
+        recipe_ingredients = get_recipe_ingredients(ingredients_dict, recipe)
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
         recipe_tags = []
@@ -197,15 +188,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         if ingredients_data:
             ingredients_dict = get_ingredients_dict(ingredients_data)
             RecipeIngredient.objects.filter(recipe=instance).delete()
-
-            recipe_ingredients = []
-            for ingredient_id, amount in ingredients_dict.items():
-                current_ingredient, status = Ingredient.objects.get_or_create(
-                    pk=ingredient_id)
-                recipe_ingredients.append(RecipeIngredient(
-                    ingredient=current_ingredient,
-                    recipe=instance,
-                    amount=amount))
+            recipe_ingredients = get_recipe_ingredients(ingredients_dict,
+                                                        instance)
             RecipeIngredient.objects.bulk_create(recipe_ingredients)
         return instance
 

@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.mixins import DestroyModelMixin, CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
-from recipes.models import Recipe
+from recipes.models import Recipe, Ingredient, RecipeIngredient
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
@@ -53,3 +53,15 @@ def get_ingredients_dict(ingredients_data):
         else:
             ingredients_dict[ingredient_id] = amount
     return ingredients_dict
+
+
+def get_recipe_ingredients(ingredients_dict, recipe):
+    recipe_ingredients = []
+    for ingredient_id, amount in ingredients_dict.items():
+        current_ingredient, status = Ingredient.objects.get_or_create(
+            pk=ingredient_id)
+        recipe_ingredients.append(RecipeIngredient(
+            ingredient=current_ingredient,
+            recipe=recipe,
+            amount=amount))
+    return recipe_ingredients
